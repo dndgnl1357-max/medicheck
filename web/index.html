@@ -1,0 +1,837 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#F2F2F7">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Medicheck">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icon.svg">
+<title>Medicheck — 복약 안전 확인</title>
+<style>
+/* ───────────────────────────────────────────────────────────────
+   iOS(휴먼 인터페이스) 스타일. 시스템 색·간격·타이포를 따른다.
+
+   딱 하나 iOS 관례를 따르지 않는 것이 있다: **1등급을 초록으로 칠하지 않는다.**
+   iOS 라면 "이상 없음"에 systemGreen 을 쓰겠지만, 여기서 1등급은 "안전"이
+   아니라 "데이터에 기록이 없음"이다. 초록으로 칠하는 순간 사용자는 그것을
+   "안전 확인됨"으로 읽고, 이 서비스의 존재 이유가 무너진다. 그래서 회색이다.
+   ─────────────────────────────────────────────────────────────── */
+:root {
+  --bg: #F2F2F7;              /* systemGroupedBackground */
+  --card: #FFFFFF;            /* secondarySystemGroupedBackground */
+  --card-alt: #F2F2F7;
+  --sep: rgba(60,60,67,.29);  /* separator */
+  --label: #000000;
+  --label2: rgba(60,60,67,.60);
+  --label3: rgba(60,60,67,.30);
+  --tint: #007AFF;            /* systemBlue */
+  --fill: rgba(120,120,128,.12);
+  --nav-bg: rgba(249,249,249,.82);
+
+  --r1: #8E8E93;   /* systemGray — 정보 없음 */
+  --r2: #E5A000;
+  --r3: #FF7A00;
+  --r4: #FF3B30;   /* systemRed */
+  --r5: #9F1D17;
+
+  --warn-bg: #FFF8E6;
+  --warn-line: rgba(229,160,0,.35);
+  --warn-ink: #8A5A00;
+  --ok: #34C759;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #000000;
+    --card: #1C1C1E;
+    --card-alt: #2C2C2E;
+    --sep: rgba(84,84,88,.65);
+    --label: #FFFFFF;
+    --label2: rgba(235,235,245,.60);
+    --label3: rgba(235,235,245,.30);
+    --tint: #0A84FF;
+    --fill: rgba(120,120,128,.24);
+    --nav-bg: rgba(30,30,32,.82);
+
+    --r1: #98989D;
+    --r2: #FFD60A;
+    --r3: #FF9F0A;
+    --r4: #FF453A;
+    --r5: #FF6961;
+
+    --warn-bg: #2A2417;
+    --warn-line: rgba(255,214,10,.28);
+    --warn-ink: #FFD60A;
+    --ok: #30D158;
+  }
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--label);
+  font: 17px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo",
+        "Segoe UI", "Malgun Gothic", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -.01em;
+}
+[hidden] { display: none !important; }
+button, input { font-family: inherit; letter-spacing: inherit; }
+
+/* ── 내비게이션 바 ─────────────────────────────────────────── */
+.nav {
+  position: sticky; top: 0; z-index: 10;
+  padding-top: env(safe-area-inset-top);
+  background: var(--nav-bg);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: .5px solid var(--sep);
+}
+.nav .row {
+  height: 44px; display: flex; align-items: center; gap: 8px;
+  padding: 0 16px; max-width: 680px; margin: 0 auto;
+}
+.nav .title { font-size: 17px; font-weight: 600; letter-spacing: -.02em; }
+.nav .spacer { flex: 1; }
+.nav .status { font-size: 13px; color: var(--label2); }
+.nav button {
+  background: none; border: 0; color: var(--tint);
+  font-size: 17px; padding: 6px 0; cursor: pointer;
+}
+.nav button:active { opacity: .4; }
+.avatar {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--tint); color: #fff;
+  display: grid; place-items: center;
+  font-size: 13px; font-weight: 600; letter-spacing: 0;
+}
+
+.wrap { max-width: 680px; margin: 0 auto; padding: 0 16px calc(40px + env(safe-area-inset-bottom)); }
+
+.largetitle { font-size: 34px; font-weight: 700; letter-spacing: -.6px; margin: 14px 0 2px; }
+.subtitle { color: var(--label2); font-size: 15px; margin: 0 0 6px; }
+
+/* ── 그룹 리스트 ───────────────────────────────────────────── */
+.section { margin-top: 28px; }
+.section > h2 {
+  font-size: 13px; font-weight: 400; color: var(--label2);
+  text-transform: none; margin: 0 0 7px; padding: 0 16px;
+  letter-spacing: -.01em;
+}
+.group {
+  background: var(--card); border-radius: 12px; overflow: hidden;
+}
+.group > .cell { padding: 13px 16px; }
+.group > .cell + .cell { border-top: .5px solid var(--sep); }
+.cell.tap { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.cell.tap:active { background: var(--fill); }
+.cell .lead { flex: 1; min-width: 0; }
+.cell .chev { color: var(--label3); font-size: 17px; }
+.cell .action { color: var(--tint); font-size: 17px; }
+.cell .action.destructive { color: var(--r4); }
+.footnote { font-size: 13px; color: var(--label2); padding: 7px 16px 0; margin: 0; line-height: 1.38; }
+
+/* ── 입력 ─────────────────────────────────────────────────── */
+.chips { display: flex; flex-wrap: wrap; gap: 7px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 2px;
+  background: var(--fill); border-radius: 999px;
+  padding: 6px 6px 6px 13px; font-size: 15px; color: var(--label);
+}
+.chip button {
+  border: 0; background: none; color: var(--label2);
+  font-size: 17px; line-height: 1; cursor: pointer;
+  width: 24px; height: 24px; border-radius: 50%;
+}
+.chip button:active { background: var(--fill); color: var(--r4); }
+.chip.saved { background: color-mix(in srgb, var(--tint) 12%, transparent); }
+
+.searchwrap { position: relative; }
+.search {
+  display: flex; align-items: center; gap: 7px;
+  background: var(--fill); border-radius: 10px; padding: 8px 11px;
+}
+.search svg { flex: 0 0 auto; color: var(--label2); }
+.search input {
+  flex: 1; min-width: 0; border: 0; background: none; outline: none;
+  font-size: 17px; color: var(--label); padding: 0;
+}
+.search input::placeholder { color: var(--label2); }
+
+.suggest {
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 8;
+  background: var(--card); border-radius: 12px; overflow: hidden auto;
+  box-shadow: 0 8px 30px rgba(0,0,0,.18); max-height: 50vh;
+}
+.suggest .row { padding: 11px 14px; cursor: pointer; font-size: 16px; }
+.suggest .row + .row { border-top: .5px solid var(--sep); }
+.suggest .row:active { background: var(--fill); }
+.suggest .kind {
+  font-size: 11px; color: var(--label2); background: var(--fill);
+  border-radius: 5px; padding: 1px 6px; margin-left: 7px; vertical-align: 2px;
+}
+.suggest .sub { display: block; color: var(--label2); font-size: 13px; margin-top: 1px; }
+
+/* ── 버튼 ─────────────────────────────────────────────────── */
+.btn {
+  display: block; width: 100%; border: 0; border-radius: 12px;
+  padding: 14px; font-size: 17px; font-weight: 600; cursor: pointer;
+  background: var(--tint); color: #fff; letter-spacing: -.02em;
+}
+.btn:active { opacity: .82; }
+.btn:disabled { background: var(--fill); color: var(--label3); cursor: default; }
+.btn.plain { background: var(--card); color: var(--tint); font-weight: 400; }
+.btnrow { display: flex; gap: 10px; }
+.btnrow .btn { flex: 1; }
+
+.pills { display: flex; flex-wrap: wrap; gap: 7px; }
+.pill {
+  border: 0; background: var(--card); color: var(--tint);
+  border-radius: 999px; padding: 7px 13px; font-size: 14px; cursor: pointer;
+}
+.pill:active { opacity: .5; }
+
+/* ── 결과 ─────────────────────────────────────────────────── */
+.verdict { display: flex; align-items: center; gap: 14px; padding: 16px; }
+.badge {
+  flex: 0 0 auto; width: 56px; height: 56px; border-radius: 16px;
+  display: grid; place-items: center; color: #fff;
+  font-size: 24px; font-weight: 700; letter-spacing: 0;
+}
+.verdict strong { display: block; font-size: 17px; font-weight: 600; }
+.verdict span { color: var(--label2); font-size: 14px; }
+.summary { margin: 0; padding: 14px 16px; border-top: .5px solid var(--sep); font-size: 16px; }
+
+.pair { padding: 13px 16px; }
+.pair + .pair { border-top: .5px solid var(--sep); }
+.pair .names { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.pair .lvl {
+  font-size: 11px; font-weight: 600; color: #fff; border-radius: 6px;
+  padding: 2px 7px; letter-spacing: 0;
+}
+.pair p { margin: 5px 0 0; font-size: 15px; color: var(--label); }
+.pair .src { color: var(--label2); font-size: 13px; margin-top: 4px; }
+
+ul.todo { margin: 0; padding: 4px 16px 4px 34px; }
+ul.todo li { margin: 9px 0; font-size: 16px; }
+
+.warn {
+  background: var(--warn-bg); border: .5px solid var(--warn-line);
+  color: var(--warn-ink); border-radius: 12px; padding: 13px 15px;
+  font-size: 15px; margin-top: 14px; line-height: 1.42;
+}
+.warn strong { font-weight: 600; }
+.warn .pill { background: rgba(255,255,255,.7); color: var(--warn-ink); margin-top: 8px; }
+@media (prefers-color-scheme: dark) { .warn .pill { background: rgba(255,255,255,.12); } }
+
+.disclaimer { font-size: 13px; color: var(--label2); line-height: 1.45; padding: 0 4px; margin: 20px 0 0; }
+.spin { padding: 16px; color: var(--label2); font-size: 16px; }
+
+/* ── 로그인 시트 ──────────────────────────────────────────── */
+.sheet {
+  position: fixed; inset: 0; z-index: 30; background: var(--bg);
+  overflow-y: auto; padding: calc(env(safe-area-inset-top) + 8px) 20px
+                            calc(env(safe-area-inset-bottom) + 24px);
+  display: grid; place-items: center;
+  animation: rise .32s cubic-bezier(.32,.72,0,1);
+}
+@keyframes rise { from { transform: translateY(14px); opacity: 0 } to { transform: none; opacity: 1 } }
+.sheet .box { width: 100%; max-width: 380px; }
+.sheet .mark {
+  width: 62px; height: 62px; border-radius: 15px; margin: 0 auto 18px;
+  display: block;
+}
+.sheet h1 { font-size: 27px; font-weight: 700; letter-spacing: -.4px; text-align: center; margin: 0 0 6px; }
+.sheet .lead { color: var(--label2); font-size: 15px; text-align: center; margin: 0 0 24px; line-height: 1.42; }
+.sheet .fields { background: var(--card); border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
+.sheet .fields input {
+  display: block; width: 100%; border: 0; outline: none; background: none;
+  padding: 14px 16px; font-size: 17px; color: var(--label);
+}
+.sheet .fields input + input { border-top: .5px solid var(--sep); }
+.sheet .fields input::placeholder { color: var(--label2); }
+.sheet .msg { font-size: 14px; margin: 12px 0 0; text-align: center; min-height: 20px; }
+.sheet .msg.err { color: var(--r4); }
+.sheet .msg.ok { color: var(--ok); }
+.sheet .alt { text-align: center; margin-top: 18px; }
+.sheet .alt button {
+  background: none; border: 0; color: var(--tint); font-size: 16px;
+  cursor: pointer; padding: 9px; display: block; width: 100%;
+}
+.sheet .alt button:active { opacity: .5; }
+.sheet .alt .quiet { color: var(--label2); font-size: 15px; }
+.privacy {
+  margin-top: 26px; font-size: 13px; color: var(--label2); line-height: 1.45;
+  text-align: center; padding: 0 6px;
+}
+</style>
+</head>
+<body>
+
+<!-- 로그인 시트.
+     안전 정보를 로그인 뒤에 숨기지 않는다 — "로그인 없이 둘러보기" 가 항상 있다.
+     약 상호작용 경고를 회원가입 뒤에 두는 것은 이 서비스가 할 일이 아니다. -->
+<div class="sheet" id="gate" hidden>
+  <div class="box">
+    <img class="mark" src="/icon.svg" alt="">
+    <h1>Medicheck</h1>
+    <p class="lead" id="gateLead">
+      계정을 만들면 이 기기에서<br>내 약 목록이 계정별로 나뉘어 저장됩니다.
+    </p>
+
+    <form id="authForm" autocomplete="on">
+      <div class="fields">
+        <input type="email" id="email" placeholder="이메일" autocomplete="username"
+               inputmode="email" autocapitalize="none" spellcheck="false" required>
+        <input type="password" id="password" placeholder="비밀번호 (6자 이상)"
+               autocomplete="current-password" minlength="6" required>
+      </div>
+      <button type="submit" class="btn" id="authSubmit">로그인</button>
+    </form>
+
+    <p class="msg" id="authMsg"></p>
+
+    <div class="alt">
+      <button type="button" id="toggleMode">계정이 없으신가요? 가입하기</button>
+      <button type="button" id="skipAuth" class="quiet">로그인 없이 둘러보기</button>
+    </div>
+
+    <p class="privacy">
+      <strong>복약 정보는 서버로 보내지 않습니다.</strong><br>
+      계정은 로그인에만 쓰이고, 내 약 목록은 이 기기 안에만 저장됩니다.
+    </p>
+  </div>
+</div>
+
+<!-- ── 앱 ── -->
+<div class="nav">
+  <div class="row">
+    <span class="title">Medicheck</span>
+    <span class="spacer"></span>
+    <span class="status" id="offline" hidden>오프라인</span>
+    <span class="avatar" id="avatar" hidden></span>
+    <button id="logoutBtn" hidden>로그아웃</button>
+    <button id="loginBtn" hidden>로그인</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1 class="largetitle">복약 안전 확인</h1>
+  <p class="subtitle">함께 먹어도 되는지 확인해 보세요.</p>
+
+  <div class="warn" id="seedBanner" hidden></div>
+
+  <!-- 내 약 -->
+  <section class="section" id="myMedsCard" hidden>
+    <h2>내 약</h2>
+    <div class="group">
+      <div class="cell"><div class="chips" id="myMeds"></div></div>
+      <div class="cell tap" id="useMyMeds">
+        <span class="lead action">불러오기</span><span class="chev">›</span>
+      </div>
+      <div class="cell tap" id="clearMyMeds">
+        <span class="lead action destructive">전체 삭제</span>
+      </div>
+    </div>
+    <p class="footnote">이 기기에만 저장됩니다. 서버로 보내지 않습니다.</p>
+  </section>
+
+  <!-- 확인할 약 -->
+  <section class="section">
+    <h2>확인할 약</h2>
+    <div class="group">
+      <div class="cell" id="chipsCell" hidden><div class="chips" id="chips"></div></div>
+      <div class="cell">
+        <div class="searchwrap">
+          <div class="search">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.8"/>
+              <path d="M11 11l3.5 3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            <input type="text" id="q" autocomplete="off" enterkeyhint="done"
+                   placeholder="약 이름 또는 제품명">
+          </div>
+          <div class="suggest" id="suggest" hidden></div>
+        </div>
+      </div>
+      <div class="cell tap" id="photoBtn">
+        <span class="lead action">📷 약봉투 촬영</span><span class="chev">›</span>
+      </div>
+      <div class="cell tap" id="saveBtn">
+        <span class="lead action">내 약으로 저장</span><span class="chev">›</span>
+      </div>
+    </div>
+    <input type="file" id="photoInput" accept="image/*" capture="environment" hidden>
+    <div id="photoStatus"></div>
+
+    <div style="margin-top:14px">
+      <button class="btn" id="run" disabled>확인하기</button>
+    </div>
+
+    <p class="footnote" style="padding-top:16px">예시</p>
+    <div class="pills examples">
+      <button class="pill" data-set="타이레놀,와파린">제품명</button>
+      <button class="pill" data-set="쿠마딘,아스피린,은행잎추출물">혈액 관련</button>
+      <button class="pill" data-set="레보티록신,칼슘">복용 간격</button>
+      <button class="pill" data-set="와파린나트륨 5mg,레보티록씬">오타·표기</button>
+      <button class="pill" data-set="warfarin,simvastatin">영문명</button>
+    </div>
+  </section>
+
+  <div id="out"></div>
+
+  <p class="disclaimer" style="text-align:center">
+    공개 데이터 기반 참고 정보 · <a href="/docs" style="color:var(--tint)">API</a>
+  </p>
+</div>
+
+<script>
+const LEVEL_COLOR = { 1: "var(--r1)", 2: "var(--r2)", 3: "var(--r3)", 4: "var(--r4)", 5: "var(--r5)" };
+const SESSION_KEY = "medicheck.session";
+
+const state = { items: [], health: null, auth: null, user: null, mode: "login" };
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+// --- 내 약 (localStorage) ---------------------------------------------------
+// 서버에 보내지 않는다. 복약 정보는 민감정보라, 기기 밖으로 나가지 않는 편이 안전하다.
+
+// 저장 키를 계정별로 나눈다. 한 기기를 여러 사람이 써도 약 목록이 섞이지 않는다.
+// 이것이 로그인이 주는 실제 이득이다 — 복약 정보는 여전히 서버로 가지 않는다.
+function storeKey() {
+  return state.user ? `medicheck.mymeds.${state.user.id}` : "medicheck.mymeds";
+}
+function loadMyMeds() {
+  try { return JSON.parse(localStorage.getItem(storeKey()) || "[]"); }
+  catch { return []; }   // 시크릿 모드나 저장 차단 시에도 화면은 동작해야 한다
+}
+function saveMyMeds(list) {
+  try { localStorage.setItem(storeKey(), JSON.stringify(list)); } catch {}
+  renderMyMeds();
+}
+function renderMyMeds() {
+  const meds = loadMyMeds();
+  $("myMedsCard").hidden = meds.length === 0;
+  $("myMeds").innerHTML = meds
+    .map((v, i) => `<span class="chip saved">${esc(v)}<button data-mi="${i}" aria-label="${esc(v)} 삭제">×</button></span>`)
+    .join("");
+}
+$("myMeds").addEventListener("click", (e) => {
+  const i = e.target.dataset.mi;
+  if (i === undefined) return;
+  const meds = loadMyMeds();
+  meds.splice(+i, 1);
+  saveMyMeds(meds);
+});
+$("useMyMeds").addEventListener("click", () => {
+  state.items = [...new Set([...state.items, ...loadMyMeds()])];
+  renderChips();
+  run();
+});
+$("clearMyMeds").addEventListener("click", () => {
+  if (confirm("저장된 약 목록을 모두 지울까요?")) saveMyMeds([]);
+});
+$("saveBtn").addEventListener("click", () => {
+  if (!state.items.length) return;
+  saveMyMeds([...new Set([...loadMyMeds(), ...state.items])]);
+});
+
+// --- 입력 ------------------------------------------------------------------
+
+function renderChips() {
+  $("chips").innerHTML = state.items
+    .map((v, i) => `<span class="chip">${esc(v)}<button data-i="${i}" aria-label="${esc(v)} 삭제">×</button></span>`)
+    .join("");
+  $("chipsCell").hidden = state.items.length === 0;
+  $("run").disabled = state.items.length === 0;
+}
+
+function add(value) {
+  const v = String(value).trim();
+  if (v && !state.items.includes(v)) state.items.push(v);
+  $("q").value = "";
+  hideSuggest();
+  renderChips();
+}
+
+$("chips").addEventListener("click", (e) => {
+  const i = e.target.dataset.i;
+  if (i !== undefined) { state.items.splice(+i, 1); renderChips(); }
+});
+
+$("q").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { e.preventDefault(); add($("q").value); }
+  else if (e.key === "Escape") hideSuggest();
+  else if (e.key === "Backspace" && !$("q").value && state.items.length) {
+    state.items.pop(); renderChips();
+  }
+});
+
+document.querySelector(".examples").addEventListener("click", (e) => {
+  const set = e.target.closest("[data-set]")?.dataset.set;
+  if (!set) return;
+  state.items = set.split(",");
+  renderChips();
+  run();
+});
+
+// --- 자동완성 (성분 + 제품) --------------------------------------------------
+
+let suggestTimer;
+function hideSuggest() { $("suggest").hidden = true; }
+
+$("q").addEventListener("input", () => {
+  clearTimeout(suggestTimer);
+  const q = $("q").value.trim();
+  if (q.length < 2) return hideSuggest();
+  suggestTimer = setTimeout(() => suggest(q), 180);
+});
+
+async function suggest(q) {
+  const [ingredients, products] = await Promise.all([
+    fetch(`/api/ingredients?q=${encodeURIComponent(q)}&limit=5`).then((r) => r.json()).catch(() => null),
+    fetch(`/api/products?q=${encodeURIComponent(q)}&limit=5`).then((r) => r.json()).catch(() => null),
+  ]);
+
+  const rows = [];
+  for (const name of ingredients?.suggestions || []) {
+    rows.push(`<div class="row" data-add="${esc(name)}">${esc(name)}<span class="kind">성분</span></div>`);
+  }
+  for (const p of products?.results || []) {
+    // 성분을 못 뽑은 제품은 분석에 쓸 수 없다. 그 사실을 미리 알린다.
+    const note = p.analyzable ? esc(p.ingredients.join(", ")) : "성분 정보 없음 — 분석 불가";
+    rows.push(
+      `<div class="row" data-add="${esc(p.search_name)}">${esc(p.search_name)}<span class="kind">제품</span>` +
+      `<span class="sub">${note}</span></div>`
+    );
+  }
+
+  if (!rows.length) return hideSuggest();
+  $("suggest").innerHTML = rows.join("");
+  $("suggest").hidden = false;
+}
+
+$("suggest").addEventListener("click", (e) => {
+  const row = e.target.closest("[data-add]");
+  if (row) add(row.dataset.add);
+});
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".searchwrap")) hideSuggest();
+});
+
+// --- 사진 --------------------------------------------------------------------
+
+$("photoBtn").addEventListener("click", () => $("photoInput").click());
+
+$("photoInput").addEventListener("change", async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const box = $("photoStatus");
+  box.innerHTML = `<div class="warn">사진을 읽는 중…</div>`;
+
+  const form = new FormData();
+  form.append("image", file);
+  try {
+    const r = await fetch("/api/photo", { method: "POST", body: form });
+    const body = await r.json();
+
+    if (!body.available) {
+      // 읽은 척하지 않는다. 왜 안 되는지 말하고 직접 입력하게 한다.
+      box.innerHTML = `<div class="warn"><strong>사진을 읽지 못했습니다.</strong><br>${esc(body.reason)}</div>`;
+      return;
+    }
+    if (!body.items.length) {
+      box.innerHTML = `<div class="warn"><strong>사진에서 약 이름을 찾지 못했습니다.</strong>` +
+        (body.note ? `<br>${esc(body.note)}` : "") + `<br>더 밝은 곳에서 글자가 잘 보이게 찍어 보세요.</div>`;
+      return;
+    }
+    // 자동으로 넣지 않는다. 잘못 읽은 약이 조용히 분석에 들어가면 안 된다.
+    box.innerHTML =
+      `<div class="warn"><strong>이렇게 읽었습니다. 맞는 것만 눌러 추가하세요.</strong>` +
+      (body.note ? `<br>${esc(body.note)}` : "") +
+      `<div class="pills" style="margin-top:9px">` +
+      body.items.map((i) => {
+        const pct = Math.round((i.confidence || 0) * 100);
+        return `<button class="pill" data-photo="${esc(i.name)}">${esc(i.name)} · ${pct}%</button>`;
+      }).join("") + `</div></div>`;
+  } catch (err) {
+    box.innerHTML = `<div class="warn">사진 전송에 실패했습니다: ${esc(err.message)}</div>`;
+  } finally {
+    e.target.value = "";   // 같은 파일을 다시 고를 수 있게
+  }
+});
+
+$("photoStatus").addEventListener("click", (e) => {
+  const name = e.target.closest("[data-photo]")?.dataset.photo;
+  if (name) add(name);
+});
+
+// --- 실행 --------------------------------------------------------------------
+
+$("run").addEventListener("click", run);
+
+async function run() {
+  if (!state.items.length) return;
+  $("out").innerHTML = `<div class="section"><div class="group"><div class="spin">확인하는 중…</div></div></div>`;
+  try {
+    const r = await fetch("/api/explain", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ingredients: state.items }),
+    });
+    if (!r.ok) throw new Error(await r.text());
+    render(await r.json());
+  } catch (err) {
+    $("out").innerHTML = `<div class="section"><div class="group"><div class="cell">
+      <strong>확인에 실패했습니다.</strong>
+      <p class="footnote" style="padding:6px 0 0">${navigator.onLine ? esc(err.message) : "오프라인 상태입니다. 연결 후 다시 시도해 주세요."}</p>
+    </div></div></div>`;
+  }
+}
+
+// --- 출력 --------------------------------------------------------------------
+
+function render(body) {
+  const a = body.analysis;
+  const color = LEVEL_COLOR[a.overall_risk];
+  const via = a.matched.filter((m) => m.via_product);
+
+  let html = `<div class="section"><div class="group">
+    <div class="verdict">
+      <div class="badge" style="background:${color}">${a.overall_risk}</div>
+      <div>
+        <strong>${esc(a.overall_label)}</strong>
+        <span>상호작용 ${a.interactions.length}건 · 성분 ${a.matched.length}개</span>
+      </div>
+    </div>
+    <p class="summary">${esc(body.summary)}</p>
+  </div></div>`;
+
+  if (via.length) {
+    html += `<div class="warn">입력하신 제품을 성분으로 바꿔서 확인했습니다.<br>` +
+      via.map((m) => `${esc(m.via_product)} → <strong>${esc(m.canonical || m.input)}</strong>`).join("<br>") +
+      `</div>`;
+  }
+
+  const ambiguous = Object.entries(a.ambiguous_products || {});
+  if (ambiguous.length) {
+    html += `<div class="warn"><strong>어느 제품인지 확인이 필요합니다.</strong>` +
+      ambiguous.map(([q, cands]) =>
+        `<br>"${esc(q)}" 은(는) 성분이 서로 다른 제품이 있습니다.` +
+        `<div class="pills" style="margin-top:8px">` +
+        cands.map((c) => `<button class="pill" data-photo="${esc(c)}">${esc(c)}</button>`).join("") + `</div>`
+      ).join("") + `</div>`;
+  }
+
+  if (a.unmatched.length) {
+    html += `<div class="warn">
+      <strong>확인하지 못한 입력: ${a.unmatched.map(esc).join(", ")}</strong><br>
+      이 성분은 아래 결과에 반영되지 않았습니다. 제품 뒷면의 성분명을 그대로 입력해 보세요.
+    </div>`;
+  }
+
+  html += `<div class="section"><h2>확인된 상호작용</h2><div class="group">`;
+  if (body.interactions.length) {
+    html += body.interactions.map((it) => {
+      const c = LEVEL_COLOR[it.severity];
+      const src = it.source ? `<p class="src">출처: ${esc(it.source)}</p>` : "";
+      return `<div class="pair">
+        <div class="names">${esc(it.ingredient_a)} + ${esc(it.ingredient_b)}
+          <span class="lvl" style="background:${c}">${esc(it.severity_label)}</span></div>
+        <p>${esc(it.plain)}</p>${src}
+      </div>`;
+    }).join("");
+  } else {
+    // "상호작용 없음"을 안전으로 읽히게 두지 않는다.
+    html += `<div class="pair"><p style="margin:0">등록된 상호작용이 없습니다.
+      <strong>이는 안전하다는 뜻이 아니라, 저희 데이터에 기록이 없다는 뜻입니다.</strong></p></div>`;
+  }
+  html += `</div></div>`;
+
+  if (a.timing_advice.length) {
+    html += `<div class="section"><h2>복용 간격</h2><div class="group">
+      <ul class="todo">${a.timing_advice.map((t) => `<li>${esc(t)}</li>`).join("")}</ul></div></div>`;
+  }
+
+  if (body.what_to_do.length) {
+    html += `<div class="section"><h2>이렇게 해보세요</h2><div class="group">
+      <ul class="todo">${body.what_to_do.map((t) => `<li>${esc(t)}</li>`).join("")}</ul></div></div>`;
+  }
+
+  const how = body.source === "llm"
+    ? `설명 생성: ${esc(body.model || "LLM")}${body.cached ? " (캐시)" : ""}`
+    : `설명 생성: 데이터 원문 기반 (LLM 미사용)`;
+  html += `<p class="disclaimer">${esc(body.disclaimer)}<br>${how}</p>`;
+
+  $("out").innerHTML = html;
+  $("out").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+// 결과 안의 후보 버튼도 사진 버튼과 같은 방식으로 추가된다
+$("out").addEventListener("click", (e) => {
+  const name = e.target.closest("[data-photo]")?.dataset.photo;
+  if (name) { add(name); run(); }
+});
+
+// --- 로그인 (Supabase Auth REST) ---------------------------------------------
+//
+// supabase-js 라이브러리를 쓰지 않고 REST 를 직접 부른다. 이 앱은 CDN·빌드도구 없는
+// 정적 파일 하나가 원칙이라, 라이브러리를 끌어오면 그 원칙이 깨진다.
+//
+// **계정만 서버에 있고 복약 정보는 기기에만 있다.** 로그인은 이 기기에서 약 목록을
+// 계정별로 나누는 데만 쓰인다. 안전 정보는 로그인 뒤에 숨기지 않는다.
+
+function readSession() {
+  try { return JSON.parse(localStorage.getItem(SESSION_KEY) || "null"); } catch { return null; }
+}
+function writeSession(sess) {
+  try {
+    if (sess) localStorage.setItem(SESSION_KEY, JSON.stringify(sess));
+    else localStorage.removeItem(SESSION_KEY);
+  } catch {}
+}
+
+async function authFetch(path, body) {
+  const r = await fetch(`${state.auth.url}/auth/v1${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", apikey: state.auth.anon_key },
+    body: JSON.stringify(body),
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    throw new Error(data.error_description || data.msg || data.message || `오류 ${r.status}`);
+  }
+  return data;
+}
+
+function setUser(user, session) {
+  state.user = user || null;
+  writeSession(session || null);
+  const on = !!state.user;
+  $("avatar").hidden = !on;
+  $("logoutBtn").hidden = !on;
+  $("loginBtn").hidden = on || !state.auth;
+  if (on) {
+    $("avatar").textContent = (state.user.email || "?").trim()[0].toUpperCase();
+    $("avatar").title = state.user.email || "";
+  }
+  renderMyMeds();   // 계정이 바뀌면 목록도 그 계정 것으로 바뀐다
+}
+
+function showGate(show) { $("gate").hidden = !show; }
+
+function authMsg(text, kind) {
+  const el = $("authMsg");
+  el.textContent = text;
+  el.className = "msg" + (kind ? " " + kind : "");
+}
+
+$("toggleMode").addEventListener("click", () => {
+  state.mode = state.mode === "login" ? "signup" : "login";
+  const signup = state.mode === "signup";
+  $("authSubmit").textContent = signup ? "가입하기" : "로그인";
+  $("toggleMode").textContent = signup ? "이미 계정이 있으신가요? 로그인" : "계정이 없으신가요? 가입하기";
+  $("password").autocomplete = signup ? "new-password" : "current-password";
+  authMsg("");
+});
+
+$("skipAuth").addEventListener("click", () => showGate(false));
+$("loginBtn").addEventListener("click", () => { authMsg(""); showGate(true); });
+$("logoutBtn").addEventListener("click", () => {
+  setUser(null, null);
+  state.items = [];
+  renderChips();
+  $("out").innerHTML = "";
+  showGate(true);
+});
+
+$("authForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = $("email").value.trim();
+  const password = $("password").value;
+  $("authSubmit").disabled = true;
+  authMsg("처리 중…");
+
+  try {
+    if (state.mode === "signup") {
+      const data = await authFetch("/signup", { email, password });
+      if (data.access_token) {
+        setUser(data.user, data);
+        showGate(false);
+      } else {
+        // 이메일 인증이 켜져 있으면 토큰 없이 온다
+        authMsg("가입되었습니다. 메일함에서 인증을 마친 뒤 로그인해 주세요.", "ok");
+        state.mode = "login";
+        $("authSubmit").textContent = "로그인";
+        $("toggleMode").textContent = "계정이 없으신가요? 가입하기";
+      }
+    } else {
+      const data = await authFetch("/token?grant_type=password", { email, password });
+      setUser(data.user, data);
+      showGate(false);
+    }
+  } catch (err) {
+    authMsg(err.message, "err");
+  } finally {
+    $("authSubmit").disabled = false;
+  }
+});
+
+async function initAuth() {
+  let cfg = null;
+  try { cfg = (await (await fetch("/api/config")).json()).auth; } catch {}
+
+  if (!cfg || !cfg.enabled) {
+    // 로그인이 설정되지 않았으면 화면을 띄우지 않는다. 앱은 그대로 동작한다.
+    state.auth = null;
+    return;
+  }
+  state.auth = cfg;
+
+  const sess = readSession();
+  if (sess && sess.user) {
+    setUser(sess.user, sess);   // 토큰 만료는 다음 로그인 때 드러난다
+    return;
+  }
+  setUser(null, null);
+  showGate(true);
+}
+
+// --- 상태 --------------------------------------------------------------------
+
+function setOffline() { $("offline").hidden = navigator.onLine; }
+window.addEventListener("online", setOffline);
+window.addEventListener("offline", setOffline);
+
+(async () => {
+  setOffline();
+  await initAuth();
+  renderChips();
+  renderMyMeds();
+
+  try {
+    const h = await (await fetch("/api/health")).json();
+    state.health = h;
+    if (h.using_seed_data) {
+      $("seedBanner").innerHTML =
+        `<strong>개발용 시드 데이터로 동작 중입니다.</strong> 실제 복약 판단에 사용하지 마세요.`;
+      $("seedBanner").hidden = false;
+    }
+    if (!h.photo_enabled) {
+      $("photoBtn").querySelector(".lead").textContent = "📷 약봉투 촬영 (준비 안 됨)";
+    }
+  } catch { /* 배너가 없어도 화면은 동작한다 */ }
+
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  }
+})();
+</script>
+</body>
+</html>

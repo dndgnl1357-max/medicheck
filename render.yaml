@@ -1,0 +1,18 @@
+# Render 배포 설정. 대시보드에서 이 저장소를 연결하면 자동으로 읽는다.
+services:
+  - type: web
+    name: medicheck
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      # 로그인용. anon(publishable) 키는 공개돼도 되는 키다.
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      # 설명·사진 인식용. 없으면 템플릿 설명으로 동작한다.
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: APP_ENV
+        value: production

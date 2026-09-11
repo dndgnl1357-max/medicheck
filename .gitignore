@@ -1,0 +1,24 @@
+.venv/
+__pycache__/
+*.py[cod]
+.env
+.pytest_cache/
+.ipynb_checkpoints/
+
+# 원본 데이터는 용량이 크므로 저장소에 넣지 않는다 (출처만 README 에 기록)
+data/raw/*
+!data/raw/.gitkeep
+data/interim/*
+!data/interim/.gitkeep
+# 정제 결과물은 **런타임에 필요하므로 저장소에 넣는다.**
+# 배포 환경에는 원본도 수집 스크립트도 없다. 이 파일들이 빠지면 앱이
+# 시드 29쌍으로 추락하고 제품 검색이 통째로 사라진다. (합쳐서 2MB 미만)
+data/processed/*
+!data/processed/.gitkeep
+!data/processed/interactions.csv
+!data/processed/products.csv
+!data/processed/aliases_generated.csv
+
+# 앱용 DB는 스크립트로 언제든 다시 구울 수 있으므로 저장소에 두지 않는다
+data/app/*
+!data/app/.gitkeep

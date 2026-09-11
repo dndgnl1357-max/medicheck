@@ -1,0 +1,16 @@
+{
+  "name": "Medicheck — 복약 안전 확인",
+  "short_name": "Medicheck",
+  "description": "약과 영양제를 함께 먹어도 되는지 확인합니다.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7f8fa",
+  "theme_color": "#1b1f27",
+  "lang": "ko",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

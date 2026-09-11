@@ -1,0 +1,20 @@
+# --- 웹 백엔드 ---
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+pydantic-settings==2.7.0
+python-multipart==0.0.20
+
+# --- 데이터 전처리 / 분석 ---
+pandas==2.2.3
+numpy==2.2.1
+openpyxl==3.1.5          # 공공데이터포털 병용금기 xlsx 읽기
+networkx==3.4.2          # 약물 상호작용 그래프
+
+# --- 외부 연동 ---
+httpx==0.28.1            # 공공데이터 API 호출
+openai==1.59.6           # GPT-4o / Vision
+python-dotenv==1.0.1
+
+# --- 개발 ---
+pytest==8.3.4
