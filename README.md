@@ -1,3 +1,18 @@
+---
+title: Medicheck
+emoji: 💊
+colorFrom: gray
+colorTo: blue
+sdk: docker
+app_port: 7860
+pinned: false
+short_description: 시민 맞춤형 복약 안전 가이드 — 성분 기반 상호작용 분석
+---
+
+<!-- 위 블록은 Hugging Face Spaces 설정이다. Spaces 는 README.md 의 YAML
+     frontmatter 를 읽어 빌드 방식(sdk)과 포트(app_port)를 정한다.
+     지우면 Space 가 안 뜬다. 다른 곳에 배포할 때는 무시해도 되는 주석 덩어리다. -->
+
 # Medicheck
 
 시민 맞춤형 복약 안전 가이드 — 성분 기반 약물·영양제 상호작용 위험도 분석 API.
