@@ -1,18 +1,30 @@
-# Render 배포 설정. 대시보드에서 이 저장소를 연결하면 자동으로 읽는다.
+# Render 배포 설정. 대시보드에서 New → Blueprint 로 이 저장소를 연결하면 자동으로 읽는다.
 services:
   - type: web
     name: medicheck
     runtime: docker
     plan: free
+    region: singapore        # 한국에서 가장 가까운 무료 리전
     healthCheckPath: /api/health
     envVars:
-      # 로그인용. anon(publishable) 키는 공개돼도 되는 키다.
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_ANON_KEY
-        sync: false
-      # 설명·사진 인식용. 없으면 템플릿 설명으로 동작한다.
-      - key: OPENAI_API_KEY
-        sync: false
       - key: APP_ENV
         value: production
+
+      # Supabase 로그인용.
+      #
+      # anon(publishable) 키를 여기 그대로 적는 것은 실수가 아니다. 이 키는
+      # 브라우저에 노출되도록 설계됐고, 실제로 /api/config 가 모든 방문자에게
+      # 내려준다. 보호는 키를 숨기는 것이 아니라 Supabase 의 RLS 정책이 한다.
+      #
+      # **service_role 키는 절대 여기 적지 마라.** 그건 RLS 를 우회하는
+      # 관리자 키이고, 공개 저장소에 올라가는 순간 프로젝트 전체가 열린다.
+      - key: SUPABASE_URL
+        value: https://dgnpfmemanechwgmnedg.supabase.co
+      - key: SUPABASE_ANON_KEY
+        value: sb_publishable_hMvLN1xPpZIXfe_TC_JiVg_IlaVP11u
+
+      # 설명·사진 인식용. 진짜 비밀이라 값을 적지 않는다 —
+      # sync: false 면 Render 대시보드에서 직접 넣게 된다.
+      # 없어도 앱은 템플릿 설명으로 정상 동작한다.
+      - key: OPENAI_API_KEY
+        sync: false
