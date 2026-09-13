@@ -145,3 +145,23 @@ def test_안전_정보는_로그인_없이도_열린다():
     """복약 안전 정보를 로그인 뒤에 숨기지 않는다."""
     assert client.post("/api/analyze", json={"ingredients": ["와파린"]}).status_code == 200
     assert client.get("/").status_code == 200
+
+
+def test_assetlinks가_앱_지문을_공개한다():
+    """TWA 앱이 주소창 없이 뜨려면 이 파일의 지문이 APK 서명과 맞아야 한다."""
+    r = client.get("/.well-known/assetlinks.json")
+    assert r.status_code == 200
+    body = r.json()
+    assert body[0]["relation"] == ["delegate_permission/common.handle_all_urls"]
+    target = body[0]["target"]
+    assert target["namespace"] == "android_app"
+    assert target["package_name"]
+    assert target["sha256_cert_fingerprints"]
+    # 지문은 콜론으로 구분된 32바이트여야 한다
+    for fp in target["sha256_cert_fingerprints"]:
+        assert len(fp.split(":")) == 32, fp
+
+
+def test_assetlinks가_정적파일_mount에_가려지지_않는다():
+    """StaticFiles 를 '/' 에 붙였으므로 선언 순서가 틀어지면 404 가 된다."""
+    assert client.get("/.well-known/assetlinks.json").headers["content-type"].startswith("application/json")

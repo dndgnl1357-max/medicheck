@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Medicheck</string>
+    <string name="launch_url">https://medicheck-txdj.onrender.com/</string>
+
+    <!-- 이 앱이 위 도메인과 한 짝임을 선언한다. 서버 쪽
+         /.well-known/assetlinks.json 과 쌍을 이뤄야 주소창 없이 뜬다. -->
+    <string name="asset_statements">
+        [{
+          \"relation\": [\"delegate_permission/common.handle_all_urls\"],
+          \"target\": {
+            \"namespace\": \"web\",
+            \"site\": \"https://medicheck-txdj.onrender.com\"
+          }
+        }]
+    </string>
+</resources>

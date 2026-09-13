@@ -1,0 +1,46 @@
+// TWA(Trusted Web Activity) 래퍼.
+//
+// 앱 코드를 새로 짜지 않는다. 이미 배포된 PWA 를 안드로이드 앱 껍데기가
+// 전체화면으로 띄우는 방식이다. 화면·로직·데이터는 전부 서버의 PWA 그대로다.
+//
+// 주소창 없이 뜨려면 서버가 /.well-known/assetlinks.json 으로 이 APK 의
+// 서명 지문을 인증해 줘야 한다. 그게 없으면 주소창이 달린 브라우저 탭으로 열린다.
+plugins { id "com.android.application" }
+
+android {
+    namespace "kr.medicheck.app"
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "kr.medicheck.app"
+        minSdk 23
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    signingConfigs {
+        release {
+            storeFile file(System.getenv("MEDICHECK_KEYSTORE") ?: "medicheck.keystore")
+            storePassword System.getenv("MEDICHECK_STOREPASS") ?: "medicheck"
+            keyAlias System.getenv("MEDICHECK_KEYALIAS") ?: "medicheck"
+            keyPassword System.getenv("MEDICHECK_KEYPASS") ?: "medicheck"
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation "com.google.androidbrowserhelper:androidbrowserhelper:2.5.0"
+}

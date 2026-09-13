@@ -22,3 +22,10 @@ data/processed/*
 # 앱용 DB는 스크립트로 언제든 다시 구울 수 있으므로 저장소에 두지 않는다
 data/app/*
 !data/app/.gitkeep
+
+# 서명 키. 공개 저장소에 올리면 누구나 이 앱 행세를 하는 APK 를 만들 수 있다.
+*.keystore
+*.jks
+android/build/
+android/.gradle/
+android/app/build/

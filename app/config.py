@@ -31,6 +31,16 @@ class Settings(BaseSettings):
     supabase_url: str = ""
     supabase_anon_key: str = ""
 
+    # 안드로이드 TWA 앱의 서명 지문(SHA-256, 콜론 구분, 쉼표로 여러 개).
+    # /.well-known/assetlinks.json 으로 공개되며, 이게 맞아야 앱이 주소창 없이
+    # 전체화면으로 뜬다. **Play 스토어에 올리면 구글이 다시 서명하므로
+    # 지문이 바뀐다** — 그때 Play Console 의 지문을 여기에 추가해야 한다.
+    android_cert_fingerprints: str = (
+        "56:69:1E:27:D4:78:0D:25:1F:B0:55:74:5C:31:8E:FD:"
+        "AA:3D:86:9D:4B:0F:85:49:60:7F:3E:38:F6:76:42:F0"
+    )
+    android_package_name: str = "kr.medicheck.app"
+
     @property
     def auth_enabled(self) -> bool:
         return bool(self.supabase_url and self.supabase_anon_key)
